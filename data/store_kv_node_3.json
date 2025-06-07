@@ -1,5 +1,10 @@
 {
-  "name": "alice",
-  "Key": "Anh dep trai nhat",
-  "Key1": "Anh dep trai nhat"
+  "name1": {
+    "value": "Alice",
+    "version": 2
+  },
+  "name": {
+    "value": "Bod",
+    "version": 8
+  }
 }

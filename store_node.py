@@ -25,21 +25,50 @@ class KVStore:
             json.dump(self.store, f, indent=2)
 
     def put(self, key, value):
-        existed = key in self.store
-        self.store[key] = value
+        if key in self.store:
+            current_version = self.store[key]["version"] + 1
+        else:
+            current_version = 1
+
+        self.store[key] = {
+            "value": value,
+            "version": current_version
+        }
         self.save_store()
-        return existed
+        return current_version
 
     def get(self, key):
-        existed = key in self.store
-        if not existed:
-            print(f"[Store] Warning: Key '{key}' not found")    
-            return None
-        return self.store.get(key)
+        if key in self.store:
+            return self.store[key]["value"]
+        return None
+
+    def get_with_version(self, key):
+        """Trả về cả value và version, dùng khi sync/replica."""
+        return self.store.get(key, None)
 
     def delete(self, key):
-        existed = key in self.store
-        if existed:
+        if key in self.store:
             del self.store[key]
             self.save_store()
-        return existed
+            return True
+        return False
+
+    def replica_put(self, key, value, version):
+        current_version = self.store.get(key, {}).get("version", 0)
+        if version > current_version:
+            self.store[key] = {
+                "value": value,
+                "version": version
+            }
+            self.save_store()
+            return True
+        return False
+
+    def replica_delete(self, key, version):
+        current_version = self.store.get(key, {}).get("version", 0)
+        if version >= current_version:
+            if key in self.store:
+                del self.store[key]
+                self.save_store()
+            return True
+        return False
