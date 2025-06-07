@@ -1,1 +1,1 @@
-# phan_tan_GK
+# source venv/bin/activate
