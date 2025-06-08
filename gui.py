@@ -74,6 +74,13 @@ class KeyValueGUI:
         ttk.Button(node_frame, text="Crash Node", command=self.crash_selected_node).pack(side=tk.LEFT, padx=5)
         ttk.Button(node_frame, text="Restart Node", command=self.restart_selected_node).pack(side=tk.LEFT, padx=5)
 
+        # --- THÊM NÚT QUIT TẠI ĐÂY ---
+        # Thêm một đường kẻ dọc để ngăn cách
+        ttk.Separator(node_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, padx=(10, 5), fill='y')
+        # Thêm nút Quit
+        ttk.Button(node_frame, text="Quit Application", command=self.on_closing).pack(side=tk.LEFT, padx=5)
+        # --- KẾT THÚC PHẦN THÊM MỚI ---
+        
         # Khung thao tác Key-Value
         kv_frame = ttk.LabelFrame(parent, text="Key-Value Operations", padding=(10, 5))
         kv_frame.pack(fill=tk.X, pady=(0, 10), padx=5)
