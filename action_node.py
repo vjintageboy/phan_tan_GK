@@ -1,5 +1,7 @@
 from router_node import get_responsible_nodes, forward_request
 from config import *
+from node_status_manager import node_status_manager
+
 
 class KVNodeLogic:
     def __init__(self, kvstore, port, log_func):
@@ -14,7 +16,7 @@ class KVNodeLogic:
                 continue
 
             for other_port in responsible_nodes:
-                if other_port == self.port:
+                if other_port == self.port or not node_status_manager.is_alive(other_port):
                     continue
                 try:
                     response = await forward_request(other_port, {
@@ -51,7 +53,7 @@ class KVNodeLogic:
 
         # Gửi tới replica (PUT hoặc DELETE)
         for replica_port in get_responsible_nodes(key):
-            if replica_port == self.port:
+            if replica_port == self.port or not node_status_manager.is_alive(replica_port):
                 continue
             try:
                 await forward_request(replica_port, {
@@ -125,25 +127,26 @@ class KVNodeLogic:
                 return {"status": STATUS_OK, "message": f"{'Updated' if existed else 'Stored'} {key}"}
 
             # Not primary → Try forward to primary
-            if cmd.get("forwarded"):
-                # Already forwarded once → fallback
-                self.log(f"[{self.port}] Received forwarded PUT. Acting as fallback.")
+            if cmd.get("forwarded") or not node_status_manager.is_alive(primary):
+                # Already forwarded or primary is DEAD → fallback
+                self.log(f"[{self.port}] PUT forward skipped or failed. Acting as fallback.")
                 return await self.act_as_temporary_primary(key, value=value)
             else:
                 self.log(f"[{self.port}] Forwarding PUT to primary {primary}")
                 cmd["forwarded"] = True
-                response = await forward_request(primary, cmd)
-                if response.get("status") == STATUS_ERROR:
-                    self.log(f"[{self.port}] PUT forward failed. Acting as fallback.")
+                try:
+                    response = await forward_request(primary, cmd)
+                    return response
+                except Exception as e:
+                    self.log(f"[{self.port}] PUT forward error: {e}. Acting as fallback.")
                     return await self.act_as_temporary_primary(key, value=value)
-                return response
 
         # -------------------- GET --------------------
         if action == "get":
             if key in self.kv.store:
                 return {"status": STATUS_OK, "value": self.kv.store[key]}
             for node_port in nodes:
-                if node_port == self.port:
+                if node_port == self.port or not node_status_manager.is_alive(node_port):
                     continue
                 try:
                     response = await forward_request(node_port, cmd)
@@ -177,13 +180,18 @@ class KVNodeLogic:
                     "message": f"{'Deleted' if deleted else 'Key not found'} {key}"
                 }
 
-            # Not primary → try forward
-            self.log(f"[{self.port}] Forwarding DELETE to primary {primary}")
-            response = await forward_request(primary, cmd)
-            if response.get("status") == STATUS_ERROR:
-                self.log(f"[{self.port}] DELETE forward failed. Acting as fallback.")
+            # Not primary → check alive then forward or fallback
+            if not node_status_manager.is_alive(primary):
+                self.log(f"[{self.port}] DELETE forward skipped. Primary {primary} is DEAD. Acting as fallback.")
                 return await self.act_as_temporary_primary(key, is_delete=True)
-            return response
+
+            try:
+                self.log(f"[{self.port}] Forwarding DELETE to primary {primary}")
+                response = await forward_request(primary, cmd)
+                return response
+            except Exception as e:
+                self.log(f"[{self.port}] DELETE forward failed: {e}. Acting as fallback.")
+                return await self.act_as_temporary_primary(key, is_delete=True)
 
         # -------------------- Unknown action --------------------
         return {"status": STATUS_ERROR, "message": f"Unknown action: {action}"}
