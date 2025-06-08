@@ -183,6 +183,15 @@ class KVNodeLogic:
                 if record.get("deleted", False) and not internal:
                     return {"status": STATUS_NOT_FOUND, "message": f"Key '{key}' not found (deleted)"}
                 return {"status": STATUS_OK, "value": record}
+
+            # --- SỬA LỖI TẠI ĐÂY ---
+            # Nếu đây là một yêu cầu nội bộ (đã được forward từ node khác)
+            # và key không có ở đây, thì dừng lại ngay.
+            if internal:
+                return {"status": STATUS_NOT_FOUND, "message": f"Key not found on peer node {self.port}"}
+            # --- KẾT THÚC SỬA LỖI ---
+
+            # Logic forward này giờ chỉ chạy cho yêu cầu ban đầu từ client
             for node_port in nodes:
                 if node_port == self.port or not node_status_manager.is_alive(node_port):
                     continue
@@ -190,10 +199,13 @@ class KVNodeLogic:
                     cmd["internal"] = True
                     response = await forward_request(node_port, cmd)
                     if response.get("status") == STATUS_OK:
+                        # Nếu một node khác có dữ liệu, trả về ngay
                         return response
                 except Exception:
                     pass
+            # Nếu không node nào có, trả về không tìm thấy
             return {"status": STATUS_NOT_FOUND, "message": f"Key '{key}' not found"}
+# ...
 
         if action == "delete":
             primary = nodes[0]
