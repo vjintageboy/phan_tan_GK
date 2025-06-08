@@ -1,8 +1,8 @@
 {
   "name": {
-    "value": "Bob",
-    "version": 25,
-    "deleted": false
+    "value": null,
+    "version": 27,
+    "deleted": true
   },
   "delete": {
     "value": "Deleted",

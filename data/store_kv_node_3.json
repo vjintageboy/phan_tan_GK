@@ -4,9 +4,9 @@
     "version": 2
   },
   "name": {
-    "value": "Bob",
-    "version": 25,
-    "deleted": false
+    "value": null,
+    "version": 27,
+    "deleted": true
   },
   "testkey": {
     "value": null,

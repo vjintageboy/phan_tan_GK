@@ -96,6 +96,18 @@ class KVNodeLogic:
         action = cmd.get("action", "").lower()
         key = cmd.get("key")
         value = cmd.get("value")
+        
+        # --- BEGIN: Thêm code mới ---
+        # Action nội bộ để GUI lấy trạng thái của tất cả node
+        if action == "get_status":
+            statuses = node_status_manager.get_all_statuses()
+            statuses[self.port] = "ALIVE"
+            return {"status": STATUS_OK, "data": statuses}
+
+        # Action nội bộ để GUI lấy toàn bộ dữ liệu của node này
+        if action == "get_all_data":
+            return {"status": STATUS_OK, "data": self.kv.store}
+        # --- END: Thêm code mới ---
 
         if action == "list_keys":
             return {"status": STATUS_OK, "keys": list(self.kv.store.keys())}
