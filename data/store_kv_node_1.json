@@ -1,1 +1,17 @@
-{}
+{
+  "delete": {
+    "value": "Deleted",
+    "version": 3,
+    "deleted": false
+  },
+  "testkey": {
+    "value": null,
+    "version": 6,
+    "deleted": true
+  },
+  "sync_test": {
+    "value": null,
+    "version": 4,
+    "deleted": true
+  }
+}

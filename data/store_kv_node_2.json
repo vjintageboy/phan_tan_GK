@@ -1,10 +1,21 @@
 {
+  "name": {
+    "value": "Alice",
+    "version": 23,
+    "deleted": false
+  },
+  "delete": {
+    "value": "Deleted",
+    "version": 3,
+    "deleted": false
+  },
   "name1": {
     "value": "Alice",
     "version": 2
   },
-  "name": {
-    "value": "Bod",
-    "version": 14
+  "sync_test": {
+    "value": null,
+    "version": 4,
+    "deleted": true
   }
 }

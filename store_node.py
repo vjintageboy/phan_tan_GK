@@ -26,21 +26,20 @@ class KVStore:
 
     def put(self, key, value):
         if key in self.store:
-            current_version = self.store[key]["version"] + 1
+            current_version = self.store[key].get("version", 0) + 1
         else:
             current_version = 1
 
         self.store[key] = {
             "value": value,
-            "version": current_version
+            "version": current_version,
+            "deleted": False
         }
         self.save_store()
         return current_version
 
     def get(self, key):
-        if key in self.store:
-            return self.store[key]["value"]
-        return None
+        return self.store.get(key, None)
 
     def get_with_version(self, key):
         """Trả về cả value và version, dùng khi sync/replica."""
@@ -48,7 +47,12 @@ class KVStore:
 
     def delete(self, key):
         if key in self.store:
-            del self.store[key]
+            current_version = self.store[key].get("version", 0) + 1
+            self.store[key] = {
+                "value": None,
+                "version": current_version,
+                "deleted": True
+            }
             self.save_store()
             return True
         return False
@@ -58,7 +62,8 @@ class KVStore:
         if version > current_version:
             self.store[key] = {
                 "value": value,
-                "version": version
+                "version": version,
+                "deleted": False
             }
             self.save_store()
             return True
@@ -66,9 +71,12 @@ class KVStore:
 
     def replica_delete(self, key, version):
         current_version = self.store.get(key, {}).get("version", 0)
-        if version >= current_version:
-            if key in self.store:
-                del self.store[key]
-                self.save_store()
+        if version > current_version:
+            self.store[key] = {
+                "value": None,
+                "version": version,
+                "deleted": True
+            }
+            self.save_store()
             return True
         return False
